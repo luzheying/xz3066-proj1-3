@@ -181,11 +181,21 @@ def candidate():
     email = request.form['email']
     phone = request.form['phone']
     g.conn.execute (text("INSERT INTO Candidates (first_name,last_name,phone,email) VALUES (:first_name,:last_name,:phone,:email)"), {"first_name":first_name,"last_name":last_name, "email":email, "phone":phone})
-    return render_template("index.html")
+    return render_template("candidate.html")
+
+
+@app.route('/findCandidate', methods=['GET'])
+def findCandidate():
+    email = request.form['email']
+    cursor = g.conn.execute (text("SELECT id FROM Candidates WHERE email = :email"), {"email":email})
+    id = cursor['id']
+    print(id)
+    return render_template("candidate.html")
+
 
 
 @app.route('/host', methods=['POST','GET'])
-def candidate():
+def host():
   if "GET" == request.method:
     return render_template("host.html")
   else:
@@ -197,7 +207,7 @@ def candidate():
 
 
 @app.route('/company', methods=['POST','GET'])
-def candidate():
+def company():
   if "GET" == request.method:
     return render_template("company.html")
   else:
