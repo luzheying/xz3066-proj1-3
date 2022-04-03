@@ -18,7 +18,7 @@ import os
 from sqlalchemy import *
 from sqlalchemy import text
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, url_for
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -186,11 +186,16 @@ def candidate():
 
 @app.route('/findCandidate', methods=['GET'])
 def findCandidate():
-    email = request.form['email']
+    email = request.args.get('email')
     cursor = g.conn.execute (text("SELECT id FROM Candidates WHERE email = :email"), {"email":email})
-    id = cursor['id']
-    print(id)
-    return render_template("candidate.html")
+    id = cursor.first()['id']
+    return render_template('candidate_home.html', id=id)
+
+@app.route('/candidate_home')
+@app.route('/candidate_home/<id>', methods=['GET'])
+def candidate_home():
+  print(request.args)
+  return render_template('candidate_home.html')
 
 
 
