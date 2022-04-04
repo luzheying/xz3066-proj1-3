@@ -1,0 +1,20 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+    {% for h in hosts: %}
+        <h2>Host {{ h.id }} Info</h2>
+        <p>First name: {{ h.first_name }}</p>
+        <p>Last name: {{ h.last_name }}</p>
+        <p>Organization: {{ h.organization }}</p>
+        <h3>Organized Events:</h3>
+        <ul>
+          {% for evt in h.events: %}
+            <li>{{ evt.description }}   |   Hold on {{ evt.time }}, {{ evt.date }}. Located in {{ evt.location }}. Has budget {{ evt.budget }}.</li>
+          {% endfor %}
+        </ul>
+    {% endfor %}
+</html>

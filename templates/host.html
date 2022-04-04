@@ -19,6 +19,18 @@
     <input type="submit" />
   </form> 
 
+  <h1>Search Registered Host</h1>
+  <form action="/findHost" method="get">
+    <p>First Name</p>
+    <input type="text" name="first_name" />
+    <p>Last Name</p>
+    <input type="text" name="last_name" />
+    <input type="submit" value="Search" />
+    {% if searchErr != "": %}
+      <p style="color:red;font-size:15px">{{ searchErr }}</p>
+    {% endif %}
+  </form>
+
 </body>
 
 

@@ -8,16 +8,29 @@
 
 
 <body>
-  <h1>Register as Company Admin</h1>
-  <form action="/company" method="post"></form>
-    <p>Company FName</p>
+  <h1>Register as Company</h1>
+  <form action="/company" method="post">
+    <p>Name</p>
     <input type="text" name="name" />
     <p>Description</p>
     <input type="text" name="description" />
     <p>Location</p>
     <input type="text" name="location" />
     <input type="submit" />
+    {% if insertErr != "": %}
+      <p style="color:red;font-size:15px">{{ insertErr }}</p>
+    {% endif %}
   </form> 
+
+  <h1>Search Registered Company</h1>
+  <form action="/findCompany" method="get">
+    <p>Name</p>
+    <input type="text" name="name" />
+    <input type="submit" value="Search" />
+    {% if searchErr != "": %}
+      <p style="color:red;font-size:15px">{{ searchErr }}</p>
+    {% endif %}
+  </form>
 </body>
 
 

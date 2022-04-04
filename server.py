@@ -19,9 +19,11 @@ from sqlalchemy import *
 from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, url_for
+from sqlalchemy import exc
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
+
 
 
 #
@@ -180,16 +182,35 @@ def candidate():
     last_name = request.form['last_name']
     email = request.form['email']
     phone = request.form['phone']
-    g.conn.execute (text("INSERT INTO Candidates (first_name,last_name,phone,email) VALUES (:first_name,:last_name,:phone,:email)"), {"first_name":first_name,"last_name":last_name, "email":email, "phone":phone})
-    return render_template("candidate.html")
+    try:
+      g.conn.execute (text("INSERT INTO Candidates (first_name,last_name,phone,email) VALUES (:first_name,:last_name,:phone,:email)"), {"first_name":first_name,"last_name":last_name, "email":email, "phone":phone})
+      return render_template("candidate.html")
+    except exc.IntegrityError as e:
+      return render_template("candidate.html", insertErr="Integrity Error. Please make sure you are following the database contraint. Email should be unique.")
+
 
 
 @app.route('/findCandidate', methods=['GET'])
 def findCandidate():
     email = request.args.get('email')
-    cursor = g.conn.execute (text("SELECT id FROM Candidates WHERE email = :email"), {"email":email})
-    id = cursor.first()['id']
-    return render_template('candidate_home.html', id=id)
+    cursor = g.conn.execute (text("SELECT * FROM Candidates WHERE email = :email"), {"email":email})
+    # id = cursor.first()['id']
+    res = cursor.first()
+    if res == None:
+      return render_template('candidate.html', searchErr="No result found.")
+    applications = []
+    cursorApp = g.conn.execute(text("SELECT * FROM Applications WHERE candidate_id = :candidate_id"), {"candidate_id": res.id})
+    for app in cursorApp:
+      cursorPos = g.conn.execute(text("SELECT * FROM Positions WHERE id = :position_id"), {"position_id": app.position_id})
+      position = cursorPos.first()
+      companyName = (g.conn.execute(text("SELECT name FROM Companys WHERE id = :id"), {"id":position.company_id})).first()['name']
+      applications.append({"date":app.date, "time":app.time, "positionCompany":companyName, "positionName":position.name, "positionDescription":position.description, "positionLocation":position.location})
+    events = []
+    eventIDs = g.conn.execute(text("SELECT event_id FROM Attends WHERE candidate_id = :candidate_id"), {"candidate_id":res.id})
+    for eid in eventIDs:
+      event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
+      events.append(event)
+    return render_template('candidate_home.html', candidate=res, applications=applications, events=events)
 
 @app.route('/candidate_home')
 @app.route('/candidate_home/<id>', methods=['GET'])
@@ -206,9 +227,35 @@ def host():
   else:
     first_name = request.form['first_name']
     last_name = request.form['last_name']
+    # print(first_name)
     organization = request.form['organization']
     g.conn.execute (text("INSERT INTO Hosts (first_name,last_name,organization) VALUES (:first_name,:last_name,:organization)"), {"first_name":first_name,"last_name":last_name, "organization":organization})
-    return render_template("index.html")
+    return render_template("host.html")
+
+@app.route('/findHost', methods=['GET'])
+def findHost():
+    first_name = request.args.get('first_name')
+    last_name = request.args.get('last_name')
+    cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE first_name = :first_name AND last_name = :last_name"), {"first_name":first_name, "last_name":last_name})
+    # id = cursor.first()['id']
+    res = []
+    for h in cursor:
+      events = []
+      eventIDs = g.conn.execute(text("SELECT event_id, budget FROM Organizes WHERE host_id = :host_id"), {"host_id":h.id})
+      for eid in eventIDs:
+        event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
+        events.append({"date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
+      res.append({"first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
+    if len(res) == 0:
+      return render_template('host.html', searchErr="No result found.")
+    return render_template('host_home.html', hosts=res)
+
+@app.route('/host_home')
+@app.route('/host_home/<id>', methods=['GET'])
+def host_home():
+  print(request.args)
+  return render_template('host_home.html')
+
 
 
 @app.route('/company', methods=['POST','GET'])
@@ -219,8 +266,30 @@ def company():
     name = request.form['name']
     description = request.form['description']
     location = request.form['location']
-    g.conn.execute (text("INSERT INTO Companys (name,description, location) VALUES (:first_name,:last_name,:organization)"), {"name":name,"description":description, "location":location})
-    return render_template("index.html")
+    try:
+      g.conn.execute (text("INSERT INTO Companys (name, description, location) VALUES (:name,:description,:location)"), {"name":name,"description":description, "location":location})
+      return render_template("company.html")
+    except exc.DataError as e:
+      return render_template("company.html", insertErr="Data Error. Maybe it is because your input value is too long (check description).")
+
+  
+@app.route('/findCompany', methods=['GET'])
+def findCompany():
+    name = request.args.get('name')
+    cursor = g.conn.execute (text("SELECT * FROM Companys WHERE name = :name"), {"name":name})
+    # id = cursor.first()['id']
+    res = []
+    for c in cursor:
+      res.append(c)
+    if len(res) == 0:
+      return render_template('company.html', searchErr="No result found.")
+    return render_template('company_home.html', companys=res)
+
+@app.route('/company_home')
+@app.route('/company_home/<id>', methods=['GET'])
+def company_home():
+  print(request.args)
+  return render_template('company_home.html')
 
 
 @app.route('/login')

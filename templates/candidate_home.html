@@ -5,5 +5,21 @@
       font-family: arial;
     }
   </style>
-    <h3>The id is: {{ id }}<h3></h3>
+    <h2>Candidate {{ candidate.id }} Info<h3></h3>
+    <p>First name: {{ candidate.first_name }}</p>
+    <p>Last name: {{ candidate.last_name }}</p>
+    <p>Phone: {{ candidate.phone }}</p>
+    <p>email: {{ candidate.email }}</p>
+    <h3>Submitted Applications:</h3>
+    <ul>
+      {% for app in applications: %}
+        <li>Application submitted on {{ app.time }}, {{ app.date }}. Applied position {{ app.positionName }} in company {{ app.positionCompany }}, located in {{ app.positionLocation }}. Brief description of the position: {{ app.positionDescription }}</li>
+      {% endfor %}
+    </ul>
+    <h3>Attended Events:</h3>
+    <ul>
+      {% for evt in events: %}
+        <li>{{ evt.description }}   |   Hold on {{ evt.time }}, {{ evt.date }}. Located in {{ evt.location }}.</li>
+      {% endfor %}
+    </ul>
 </html>
