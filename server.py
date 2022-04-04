@@ -182,11 +182,13 @@ def candidate():
     last_name = request.form['last_name']
     email = request.form['email']
     phone = request.form['phone']
+    if first_name == "" or last_name == "":
+      return render_template("candidate.html", insertErr="First name and last name should be not null.")
     try:
       g.conn.execute (text("INSERT INTO Candidates (first_name,last_name,phone,email) VALUES (:first_name,:last_name,:phone,:email)"), {"first_name":first_name,"last_name":last_name, "email":email, "phone":phone})
       return render_template("candidate.html")
     except exc.IntegrityError as e:
-      return render_template("candidate.html", insertErr="Integrity Error. Please make sure you are following the database contraint. Email should be unique.")
+      return render_template("candidate.html", insertErr="Integrity Error. Please make sure you are following the database contraint. Email should be unique. ")
 
 
 
@@ -229,8 +231,15 @@ def host():
     last_name = request.form['last_name']
     # print(first_name)
     organization = request.form['organization']
-    g.conn.execute (text("INSERT INTO Hosts (first_name,last_name,organization) VALUES (:first_name,:last_name,:organization)"), {"first_name":first_name,"last_name":last_name, "organization":organization})
-    return render_template("host.html")
+    if first_name == "" or last_name == "":
+      return render_template("host.html", insertErr="First name and last name should be not null.")
+    print(first_name)
+    print(last_name)
+    try:
+      g.conn.execute (text("INSERT INTO Hosts (first_name,last_name,organization) VALUES (:first_name,:last_name,:organization)"), {"first_name":first_name,"last_name":last_name, "organization":organization})
+      return render_template("host.html")
+    except exc.IntegrityError as e:
+      return render_template("host.html", insertErr="Integrity Error. Please make sure you are following the database contraint.")
 
 @app.route('/findHost', methods=['GET'])
 def findHost():
@@ -266,6 +275,8 @@ def company():
     name = request.form['name']
     description = request.form['description']
     location = request.form['location']
+    if name == "":
+      return render_template("company.html", insertErr="Name should be not null.")
     try:
       g.conn.execute (text("INSERT INTO Companys (name, description, location) VALUES (:name,:description,:location)"), {"name":name,"description":description, "location":location})
       return render_template("company.html")
@@ -280,7 +291,9 @@ def findCompany():
     # id = cursor.first()['id']
     res = []
     for c in cursor:
-      res.append(c)
+      recruiters = g.conn.execute(text("SELECT * FROM Recruiters WHERE company_id = :company_id"), {"company_id": c.id})
+      positions = g.conn.execute(text("SELECT * FROM Positions WHERE company_id = :company_id"), {"company_id": c.id})
+      res.append({"name":c.name, "description":c.description, "location":c.location, "recruiters":recruiters, "positions":positions})
     if len(res) == 0:
       return render_template('company.html', searchErr="No result found.")
     return render_template('company_home.html', companys=res)

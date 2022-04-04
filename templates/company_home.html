@@ -5,11 +5,22 @@
       font-family: arial;
     }
   </style>
-    <h2>Searched Results</h2>
     {% for company in companys: %}
-        <h3>Company {{ company.id }} Info<h3></h3>
+        <h2>Company {{ company.id }} Info</h2>
         <p>Name: {{ company.name }}</p>
         <p>Description: {{ company.description }}</p>
         <p>Location: {{ company.location }}</p>
+        <h3>Open Positions:</h3>
+        <ul>
+          {% for p in company.positions: %}
+            <li>{{ p.name }}: {{ p.description }}. Would be working in {{ p.location }}.</li>
+          {% endfor %}
+        </ul>
+        <h3>Recruiters:</h3>
+        <ul>
+          {% for r in company.recruiters: %}
+            <li>{{ r.first_name }} {{ r.last_name }}, {{ r.title }}. Contact info: phone number {{ r.phone }}, email {{ r.email }}</li>
+          {% endfor %}
+        </ul>
     {% endfor %}
 </html>

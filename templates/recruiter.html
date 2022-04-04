@@ -8,22 +8,26 @@
 
 
 <body>
-  <h1>Register as Host</h1>
-  <form action="/host" method="post">
+  <h1>Register as Recruiter</h1>
+  <form action="/recruiter" method="post">
     <p>First Name</p>
     <input type="text" name="first_name" />
     <p>Last Name</p>
     <input type="text" name="last_name" />
-    <p>Organization</p>
-    <input type="text" name="organization" />
+    <p>Phone</p>
+    <input type="text" name="phone" />
+    <p>Email</p>
+    <input type="text" name="email" />
+    <p>Title</p>
+    <input type="text" name="title" />
+    <input type="submit" />
     {% if insertErr != "": %}
       <p style="color:red;font-size:15px">{{ insertErr }}</p>
     {% endif %}
-    <input type="submit" />
   </form> 
 
-  <h1>Search Registered Host</h1>
-  <form action="/findHost" method="get">
+  <h1>Search Registered Recruiter</h1>
+  <form action="/findRecruiter" method="get">
     <p>First Name</p>
     <input type="text" name="first_name" />
     <p>Last Name</p>
@@ -33,7 +37,13 @@
       <p style="color:red;font-size:15px">{{ searchErr }}</p>
     {% endif %}
   </form>
-
+  <h2>Registered Companys:</h2>
+  <p style="color:red;font-size:15px">Note: you can only register as a recruiter for existing companys.</p>
+  <ul>
+  {% for company in companys: %}
+      {{ company.id }}: {{ company.name }}
+  {% endfor %}
+  </ul>
 </body>
 
 
