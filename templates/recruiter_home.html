@@ -1,0 +1,23 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+    {% for r in recruiters: %}
+        <h2>Recruiter {{ r.id }} Info</h2>
+        <p>First Name: {{ r.first_name }}</p>
+        <p>Last Name: {{ r.last_name }}</p>
+        <p>Title: {{ r.title }}</p>
+        <p>Phone: {{ r.phone }}</p>
+        <p>Email: {{ r.email }}</p>
+        <p>Company: ID {{ r.company.id }}, {{ r.company.name }} in {{ r.company.location }}</p>
+        <h3>Approved Applications:</h3>
+        <ul>
+          {% for a in r.applications: %}
+            <li>Application {{ a.id }}: submitted on {{ a.date }} {{ a.time }} by candidate {{ a.candidate.id }} {{ a.candidate.first_name }} {{ a.candidate.last_name }}, applied for position {{ a.position.id }}.</li>
+          {% endfor %}
+        </ul>
+    {% endfor %}
+</html>

@@ -305,6 +305,58 @@ def company_home():
   return render_template('company_home.html')
 
 
+@app.route('/recruiter', methods=['POST','GET'])
+def recruiter():
+  if "GET" == request.method:
+    companys = g.conn.execute(text("SELECT id, name FROM Companys"))
+    return render_template("recruiter.html", companys=companys)
+  else:
+    first_name = request.form["first_name"]
+    last_name = request.form["last_name"]
+    phone = request.form["phone"]
+    email = request.form["email"]
+    title = request.form["title"]
+    company_id = request.form["company_id"]
+    if first_name == "" or last_name == "":
+      return render_template("recruiter.html", insertErr="First name and last name should be not null.")
+    if (g.conn.execute(text("SELECT * FROM Companys WHERE id = :company_id"), {"company_id":company_id})).first() == None:
+      return render_template("recruiter.html", insertErr="Company id invalid. Company not exists.")
+    g.conn.execute (text("INSERT INTO Recruiters (first_name, last_name, company_id, phone, email, title) VALUES (:first_name, :last_name, :company_id, :phone, :email, :title)"), {"first_name":first_name, "last_name":last_name, "company_id":company_id, "phone":phone, "email":email, "title":title})
+    return render_template("recruiter.html")
+
+@app.route('/findRecruiter', methods=['GET'])
+def findRecruiter():
+    first_name = request.args.get('first_name')
+    last_name = request.args.get('last_name')
+    cursor = g.conn.execute (text("SELECT * FROM Recruiters WHERE first_name = :first_name AND last_name = :last_name"), {"first_name":first_name, "last_name":last_name})
+    # id = cursor.first()['id']
+    res = []
+    for r in cursor:
+      print(r.id)
+      company = (g.conn.execute(text("SELECT * FROM Companys WHERE id = :id"), {"id":r.company_id})).first()
+      applicationIds = g.conn.execute(text("SELECT application_id FROM Approves WHERE recruiter_id = :recruiter_id"), {"recruiter_id":r.id})
+      applications = []
+      for aid in applicationIds:
+        app = (g.conn.execute(text("SELECT * FROM Applications WHERE id = :id"), {"id":aid.application_id})).first()
+        candidate = (g.conn.execute(text("SELECT * FROM Candidates WHERE id = :id"), {"id":app.candidate_id})).first()
+        position = (g.conn.execute(text("SELECT * FROM Positions WHERE id = :id"), {"id":app.position_id})).first()
+        resume = ""
+        if app.resume == 'Y':
+          resume = "Resume submitted."
+        else:
+          resume = "Resume unsubmitted or unknown."
+        applications.append({"date":app.date, "time":app.time, "resume":resume, "candidate":candidate, "position":position})
+      res.append({"first_name":r.first_name, "last_name":r.last_name, "title":r.title, "phone":r.phone, "email":r.email, "applications":applications, "company":company})
+    if len(res) == 0:
+      return render_template('recruiter.html', searchErr="No result found.")
+    return render_template('recruiter_home.html', recruiters=res)
+
+@app.route('/recruiter_home')
+@app.route('/recruiter_home/<id>', methods=['GET'])
+def recruiter_home():
+  print(request.args)
+  return render_template('recruiter_home.html')
+
 @app.route('/login')
 def login():
     abort(401)

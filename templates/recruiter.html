@@ -10,6 +10,9 @@
 <body>
   <h1>Register as Recruiter</h1>
   <form action="/recruiter" method="post">
+    <p style="color:blue;font-size:15px">Please make sure your entered company id is a valid one. (You can choose from below existing company.)</p>
+    <p>Company ID</p>
+    <input type="text" name="company_id" />
     <p>First Name</p>
     <input type="text" name="first_name" />
     <p>Last Name</p>
@@ -38,10 +41,10 @@
     {% endif %}
   </form>
   <h2>Registered Companys:</h2>
-  <p style="color:red;font-size:15px">Note: you can only register as a recruiter for existing companys.</p>
+  <p style="color:blue;font-size:15px">Note: you can only register as a recruiter for existing companys.</p>
   <ul>
   {% for company in companys: %}
-      {{ company.id }}: {{ company.name }}
+      <li>{{ company.id }}: {{ company.name }}</li>
   {% endfor %}
   </ul>
 </body>
