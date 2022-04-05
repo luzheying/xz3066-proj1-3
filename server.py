@@ -475,30 +475,35 @@ def recruiter_home():
 @app.route('/application', methods=['POST','GET'])
 def application():
   positions = g.conn.execute(text("SELECT Positions.id, Positions.description, Companys.name AS company FROM Positions JOIN Companys ON Positions.id = Companys.id"))
+  approvedApps = g.conn.execute(text("SELECT * FROM Approves"))
   if "GET" == request.method:
-    return render_template("application.html", positions=positions)
+    return render_template("application.html", positions=positions, approvedApps=approvedApps)
   else:
     candidate_id = request.form["candidate_id"]
     position_id = request.form["position_id"]
     curr_date = date.today()
     curr_time = datetime.now()
+    resume = request.form["resume"]
     if candidate_id == "":
       candidate_id = -1
     if position_id == "":
       position_id = -1
+    if resume != 'Y' and resume != 'N' and resume != "":
+      return render_template("application.html", insertErr="Resume Submitted answer invalid. Please enter Y or N.", positions=positions, approvedApps=approvedApps)
     if (g.conn.execute(text("SELECT * FROM Candidates WHERE id = :candidate_id"), {"candidate_id":candidate_id})).first() == None:
-      return render_template("application.html", insertErr="Candidate id invalid. Candidate not exists.", positions=positions)
+      return render_template("application.html", insertErr="Candidate id invalid. Candidate not exists.", positions=positions, approvedApps=approvedApps)
     if (g.conn.execute(text("SELECT * FROM Positions WHERE id = :position_id"), {"position_id":position_id})).first() == None:
-      return render_template("application.html", insertErr="Position id invalid. Position not exists.", positions=positions)
+      return render_template("application.html", insertErr="Position id invalid. Position not exists.", positions=positions, approvedApps=approvedApps)
     try:
-      g.conn.execute (text("INSERT INTO Applications (candidate_id, position_id, date, time, resume) VALUES (:candidate_id, :position_id, :curr_date, :curr_time, :resume)"), {"candidate_id":candidate_id, "position_id":position_id, "curr_date":curr_date, "curr_time":curr_time, "resume":'N'})
-      return render_template("application.html", positions=positions)
+      g.conn.execute (text("INSERT INTO Applications (candidate_id, position_id, date, time, resume) VALUES (:candidate_id, :position_id, :curr_date, :curr_time, :resume)"), {"candidate_id":candidate_id, "position_id":position_id, "curr_date":curr_date, "curr_time":curr_time, "resume":resume})
+      return render_template("application.html", positions=positions, approvedApps=approvedApps)
     except exc.DataError as e:
-      return render_template("application.html", insertErr="Data error. Please make sure your input are in correct type.", positions=positions)
+      return render_template("application.html", approvedApps=approvedApps, insertErr="Data error. Please make sure your input are in correct type.", positions=positions)
 
 
 @app.route('/findApplication', methods=['GET'])
 def findApplication():
+    approvedApps = g.conn.execute(text("SELECT * FROM Approves"))
     positions = g.conn.execute(text("SELECT Positions.id, Positions.description, Companys.name AS company FROM Positions JOIN Companys ON Positions.id = Companys.id"))
     candidate_id = request.args.get('candidate_id')
     position_id = request.args.get('position_id')
@@ -515,8 +520,28 @@ def findApplication():
     for a in cursor:
       apps.append(a)
     if len(apps) == 0:
-      return render_template('application.html', searchErr="No result found.", positions=positions)
+      return render_template('application.html', searchErr="No result found.", positions=positions, approvedApps=approvedApps)
     return render_template('application_home.html', applications=apps)
+
+@app.route('/approveApplication', methods=['POST'])
+def approveApplication():
+  approvedApps = g.conn.execute(text("SELECT * FROM Approves"))
+  positions = g.conn.execute(text("SELECT Positions.id, Positions.description, Companys.name AS company FROM Positions JOIN Companys ON Positions.id = Companys.id"))
+  recruiter_id = request.form['recruiter_id']
+  application_id = request.form['application_id']
+  if recruiter_id == "":
+    recruiter_id = -1
+  if application_id == "":
+    application_id = -1
+  if (g.conn.execute(text("SELECT id FROM Recruiters WHERE id = :id"), {"id":recruiter_id})).first() == None:
+    return render_template('application.html', approveErr="Invalid recruiter id. Recruiter not exists", positions=positions, approvedApps=approvedApps)
+  if (g.conn.execute(text("SELECT * FROM Applications WHERE id = :id"), {"id":application_id})).first() == None:
+    return render_template('application.html', approveErr="Invalid application id. application not exists", positions=positions, approvedApps=approvedApps)
+  g.conn.execute (text("INSERT INTO Approves (recruiter_id, application_id) VALUES (:recruiter_id, :application_id)"), {"recruiter_id":recruiter_id, "application_id":application_id})
+  approvedApps = g.conn.execute(text("SELECT * FROM Approves"))
+  return render_template('application.html', positions=positions, approvedApps=approvedApps)
+
+
 
 
 @app.route('/application_home')

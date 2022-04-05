@@ -12,11 +12,12 @@
   <h1>Create an Application</h1>
   <form action="/application" method="post">
     <p style="color:blue;font-size:15px">Please make sure your entered position id and candidate id are valid ones. (You can choose from below existing positions.)</p>
-    <p style="color:blue;font-size:15px">Please remember to submit your resume on company's official website.</p>
     <p>Candidate ID</p>
     <input type="text" name="candidate_id" />
     <p>Position ID</p>
     <input type="text" name="position_id" />
+    <p>Resume Submitted? Y/N</p>
+    <input type="text" name="resume" />
     <input type="submit" />
     {% if insertErr != "": %}
       <p style="color:red;font-size:15px">{{ insertErr }}</p>
@@ -42,6 +43,25 @@
       <p style="color:red;font-size:15px">{{ searchErr }}</p>
     {% endif %}
   </form>
+
+  <h1>Approve Application</h1>
+  <p style="color:blue;font-size:15px">Please make sure your entered recruiter id and application id are valid ones. </p>
+  <form action="/approveApplication" method="POST">
+  <p>Recruiter ID</p>
+  <input type="text" name="recruiter_id" />
+  <p>Application ID</p>
+  <input type="text" name="application_id" />
+  <input type="submit" value="Approve" />
+</form>
+  {% if approveErr != "": %}
+      <p style="color:red;font-size:15px">{{ approveErr }}</p>
+    {% endif %}
+  <h1>View All Approved Applications</h1>
+  <ul>
+  {% for a in approvedApps %}
+    <li>Application {{ a.application_id }} approved by recruiter {{ a.recruiter_id }}</li>
+  {% endfor %}
+  </ul>  
 </body>
 
 
