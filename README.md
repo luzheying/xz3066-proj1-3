@@ -1,1 +1,13 @@
-# 4111project1_p3
+# project1.3 (xz3066 zl3091)
+* PostgreSQL account: xz3066
+
+* App URL: http://34.74.114.235:8111/
+
+* Back to Proposal:
+Our web app realizes event management mentioned in proposal in following ways. Hosts are able to create events, delete events, and invite companies for events. Candidates can then see their attended events. And companies are also able to see their being-invited events.
+Our web app realizes job applications management mentioned in proposal in following ways. Candidates are able to create applications to opening positions. Recruiters can then make approvals to submitted applications. Recruiter can view his/her approved applications, along with interviews scheduled for these approved applications. Candidate can view his/her submitted applications, and interviews scheduled (if any) to any of these submitted applications. Candidate can also view his/her attended events.
+Our web app supports users to register as host, candidate, company, and recruiters. For recruiters, users have to specify a registered company.
+
+
+* Query
+In terms of the web pages that require (what you consider) the most interesting database, we think host page and page are the most interesting ones. For host page, after continue as a registered host, we can create event, delete event and invite company. For creating event feature, we insert the input we got from the page as newly created event into Events entity table. At the same time, event will be mapped to corresponding host by insert data into Organizes relation table with additional budget attribute. After successfully created new event and organize data, the page will be refreshed to show changes. Another page we found interesting is the application page. In the application page, candidates and recruiters can interact with database at the same time. We displayed related existing application information for a specific candidate and also all the opening positions. The candidate can check what existing application he/she has submitted or apply for new positions which the input from the page will be inserted into applications entity table in our database. On top of that, the recruiters can also use this page to access information about an specific application and approve the applications to be considered for the next step. The information we got from recruiters will be inserted into our Approves relation entity to show that some applications have been approved.
