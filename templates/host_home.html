@@ -6,7 +6,7 @@
     }
   </style>
     {% for h in hosts: %}
-        <h2>Host Info</h2>
+        <h2>Host {{ h.id }} Info</h2>
         <p>First name: {{ h.first_name }}</p>
         <p>Last name: {{ h.last_name }}</p>
         <p>Organization: {{ h.organization }}</p>

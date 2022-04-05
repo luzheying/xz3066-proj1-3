@@ -268,7 +268,7 @@ def deleteEvent():
     id = request.args.get('event_id')
     host_id = request.args.get('host_id')
     if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":id})).first() == None:
-      return render_template("host.html", insertErr="Event id invalid. Event not exists.")
+      return render_template("host.html", insertErr="Delete failed. Event id invalid. Event not exists.")
     g.conn.execute(text("DELETE FROM Events WHERE id = :event_id"), {"event_id":id})
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
     # id = cursor.first()['id']
@@ -281,7 +281,7 @@ def deleteEvent():
         events.append({"id": event.id, "date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
       res.append({"id": h.id, "first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
     if len(res) == 0:
-      return render_template('host.html', searchErr="No result found.")
+      return render_template('host.html', searchErr="Delete failed. No result found.")
     return render_template('host_home.html', hosts=res)
 
 
@@ -295,6 +295,8 @@ def event():
     capacity = request.form['capacity']
     budget = request.form['budget']
     # print(first_name)
+    if date == "":
+      return render_template("host.html", insertErr="Register event failed. Date should not be null.")
     event = g.conn.execute(text("INSERT INTO events (date, time, description, location, capacity) VALUES (:date, :time, :description, :location, :capacity) RETURNING id"), {"date":date,"time":time, "description":description,"location":location,"capacity":capacity})
     event_id = event.first()[0]
     g.conn.execute(text("INSERT INTO Organizes (budget, event_id, host_id) VALUES (:budget, :event_id, :host_id)"), {"budget":budget,"event_id":event_id, "host_id":host_id})
@@ -320,9 +322,9 @@ def invite():
     company_id = request.form['company_id']
     event_id = request.form['event_id']
     if (g.conn.execute(text("SELECT * FROM Companys WHERE id = :company_id"), {"company_id":company_id})).first() == None:
-      return render_template("host.html", insertErr="Company id invalid. Company not exists.")
+      return render_template("host.html", insertErr="Invite failed. Company id invalid. Company not exists.")
     if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":event_id})).first() == None:
-      return render_template("host.html", insertErr="Event id invalid. Event not exists.")
+      return render_template("host.html", insertErr="Invite failed. Event id invalid. Event not exists.")
     g.conn.execute(text("INSERT INTO invites (event_id,host_id,company_id) VALUES (:event_id,:host_id,:company_id)"), {"company_id":company_id,"event_id":event_id, "host_id":host_id})
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
   # id = cursor.first()['id']
