@@ -20,6 +20,8 @@ from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, url_for
 from sqlalchemy import exc
+from datetime import date
+from datetime import datetime
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -267,6 +269,10 @@ def findHost():
 def deleteEvent():
     id = request.args.get('event_id')
     host_id = request.args.get('host_id')
+    if id == "":
+      id = -1
+    if host_id == "":
+      host_id = -1
     if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":id})).first() == None:
       return render_template("host.html", insertErr="Delete failed. Event id invalid. Event not exists.")
     g.conn.execute(text("DELETE FROM Events WHERE id = :event_id"), {"event_id":id})
@@ -303,6 +309,8 @@ def event():
       budget = None
     if time == "":
       time = None
+    if host_id == "":
+      host_id = -1
     try:
       event = g.conn.execute(text("INSERT INTO events (date, time, description, location, capacity) VALUES (:date, :time, :description, :location, :capacity) RETURNING id"), {"date":date,"time":time, "description":description,"location":location,"capacity":capacity})
     except exc.DataError as e:
@@ -330,6 +338,10 @@ def invite():
     host_id = request.form.get('host_id')
     company_id = request.form['company_id']
     event_id = request.form['event_id']
+    if company_id == "":
+      company_id = -1
+    if event_id == "":
+      event_id = -1
     if (g.conn.execute(text("SELECT * FROM Companys WHERE id = :company_id"), {"company_id":company_id})).first() == None:
       return render_template("host.html", insertErr="Invite failed. Company id invalid. Company not exists.")
     if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":event_id})).first() == None:
@@ -400,8 +412,8 @@ def company_home():
 
 @app.route('/recruiter', methods=['POST','GET'])
 def recruiter():
+  companys = g.conn.execute(text("SELECT id, name FROM Companys"))
   if "GET" == request.method:
-    companys = g.conn.execute(text("SELECT id, name FROM Companys"))
     return render_template("recruiter.html", companys=companys)
   else:
     first_name = request.form["first_name"]
@@ -410,24 +422,29 @@ def recruiter():
     email = request.form["email"]
     title = request.form["title"]
     company_id = request.form["company_id"]
+    if company_id == "":
+      company_id = -1
     if first_name == "" or last_name == "":
-      return render_template("recruiter.html", insertErr="First name and last name should be not null.")
+      return render_template("recruiter.html", insertErr="First name and last name should be not null.", companys=companys)
     if (g.conn.execute(text("SELECT * FROM Companys WHERE id = :company_id"), {"company_id":company_id})).first() == None:
-      return render_template("recruiter.html", insertErr="Company id invalid. Company not exists.")
-    g.conn.execute (text("INSERT INTO Recruiters (first_name, last_name, company_id, phone, email, title) VALUES (:first_name, :last_name, :company_id, :phone, :email, :title)"), {"first_name":first_name, "last_name":last_name, "company_id":company_id, "phone":phone, "email":email, "title":title})
-    return render_template("recruiter.html")
+      return render_template("recruiter.html", insertErr="Company id invalid. Company not exists.", companys=companys)
+    try:
+      g.conn.execute (text("INSERT INTO Recruiters (first_name, last_name, company_id, phone, email, title) VALUES (:first_name, :last_name, :company_id, :phone, :email, :title)"), {"first_name":first_name, "last_name":last_name, "company_id":company_id, "phone":phone, "email":email, "title":title})
+      return render_template("recruiter.html", companys=companys)
+    except exc.DataError as e:
+      return render_template("recruiter.html", insertErr="Data error. Please make sure your input are in correct type.", companys=companys)
 
 
     
 @app.route('/findRecruiter', methods=['GET'])
 def findRecruiter():
+    companys = g.conn.execute(text("SELECT id, name FROM Companys"))
     first_name = request.args.get('first_name')
     last_name = request.args.get('last_name')
     cursor = g.conn.execute (text("SELECT * FROM Recruiters WHERE first_name = :first_name AND last_name = :last_name"), {"first_name":first_name, "last_name":last_name})
     # id = cursor.first()['id']
     res = []
     for r in cursor:
-      print(r.id)
       company = (g.conn.execute(text("SELECT * FROM Companys WHERE id = :id"), {"id":r.company_id})).first()
       applicationIds = g.conn.execute(text("SELECT application_id FROM Approves WHERE recruiter_id = :recruiter_id"), {"recruiter_id":r.id})
       applications = []
@@ -444,7 +461,7 @@ def findRecruiter():
       interviews = g.conn.execute(text("SELECT * FROM interviews INNER JOIN Applications ON interviews.application_id = Applications.id WHERE recruiter_id = :recruiter_id"), {"recruiter_id":r.id})
       res.append({"first_name":r.first_name, "last_name":r.last_name, "title":r.title, "phone":r.phone, "email":r.email, "applications":applications, "company":company, "interviews":interviews})
     if len(res) == 0:
-      return render_template('recruiter.html', searchErr="No result found.")
+      return render_template('recruiter.html', searchErr="No result found.", companys=companys)
     return render_template('recruiter_home.html', recruiters=res)
 
 
@@ -455,10 +472,64 @@ def recruiter_home():
   return render_template('recruiter_home.html')
 
 
-@app.route('/login')
-def login():
-    abort(401)
-    this_is_never_executed()
+@app.route('/application', methods=['POST','GET'])
+def application():
+  positions = g.conn.execute(text("SELECT Positions.id, Positions.description, Companys.name AS company FROM Positions JOIN Companys ON Positions.id = Companys.id"))
+  if "GET" == request.method:
+    return render_template("application.html", positions=positions)
+  else:
+    candidate_id = request.form["candidate_id"]
+    position_id = request.form["position_id"]
+    curr_date = date.today()
+    curr_time = datetime.now()
+    if candidate_id == "":
+      candidate_id = -1
+    if position_id == "":
+      position_id = -1
+    if (g.conn.execute(text("SELECT * FROM Candidates WHERE id = :candidate_id"), {"candidate_id":candidate_id})).first() == None:
+      return render_template("application.html", insertErr="Candidate id invalid. Candidate not exists.", positions=positions)
+    if (g.conn.execute(text("SELECT * FROM Positions WHERE id = :position_id"), {"position_id":position_id})).first() == None:
+      return render_template("application.html", insertErr="Position id invalid. Position not exists.", positions=positions)
+    try:
+      g.conn.execute (text("INSERT INTO Applications (candidate_id, position_id, date, time, resume) VALUES (:candidate_id, :position_id, :curr_date, :curr_time, :resume)"), {"candidate_id":candidate_id, "position_id":position_id, "curr_date":curr_date, "curr_time":curr_time, "resume":'N'})
+      return render_template("application.html", positions=positions)
+    except exc.DataError as e:
+      return render_template("application.html", insertErr="Data error. Please make sure your input are in correct type.", positions=positions)
+
+
+@app.route('/findApplication', methods=['GET'])
+def findApplication():
+    positions = g.conn.execute(text("SELECT Positions.id, Positions.description, Companys.name AS company FROM Positions JOIN Companys ON Positions.id = Companys.id"))
+    candidate_id = request.args.get('candidate_id')
+    position_id = request.args.get('position_id')
+    if candidate_id == "" and position_id == "":
+      cursor = g.conn.execute (text("SELECT * FROM Applications"))
+    elif candidate_id == "":
+      cursor = g.conn.execute(text("SELECT * FROM Applications WHERE position_id = :position_id"), {"position_id":position_id})
+    elif position_id == "":
+      cursor = g.conn.execute(text("SELECT * FROM Applications WHERE candidate_id = :candidate_id"), {"candidate_id":candidate_id})
+    else:
+      cursor = g.conn.execute(text("SELECT * FROM Applications WHERE position_id = :position_id AND candidate_id = :candidate_id"), {"position_id":position_id, "candidate_id":candidate_id})
+    # id = cursor.first()['id']
+    apps = []
+    for a in cursor:
+      apps.append(a)
+    if len(apps) == 0:
+      return render_template('application.html', searchErr="No result found.", positions=positions)
+    return render_template('application_home.html', applications=apps)
+
+
+@app.route('/application_home')
+@app.route('/application_home/<candidate_id>/<position_id>', methods=['GET'])
+def application_home():
+  print(request.args)
+  return render_template('application_home.html')
+
+
+# @app.route('/login')
+# def login():
+#     abort(401)
+#     this_is_never_executed()
 
 
 if __name__ == "__main__":

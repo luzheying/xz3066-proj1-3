@@ -1,0 +1,48 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+  </style>
+
+
+<body>
+  <a href="/">Back to Home</a>
+  <h1>Create an Application</h1>
+  <form action="/application" method="post">
+    <p style="color:blue;font-size:15px">Please make sure your entered position id and candidate id are valid ones. (You can choose from below existing positions.)</p>
+    <p style="color:blue;font-size:15px">Please remember to submit your resume on company's official website.</p>
+    <p>Candidate ID</p>
+    <input type="text" name="candidate_id" />
+    <p>Position ID</p>
+    <input type="text" name="position_id" />
+    <input type="submit" />
+    {% if insertErr != "": %}
+      <p style="color:red;font-size:15px">{{ insertErr }}</p>
+    {% endif %}
+  </form> 
+
+  <h2>Opening Positions:</h2>
+  <p style="color:blue;font-size:15px">Note: you can only create applications for opening positions.</p>
+  <ul>
+  {% for p in positions: %}
+      <li>{{ p.id }}: Opened by company {{ p.company}}. {{ p.description }}</li>
+  {% endfor %}
+  </ul>
+
+  <h1>Search Created Applications</h1>
+  <form action="/findApplication" method="get">
+    <p>Candidate ID</p>
+    <input type="text" name="candidate_id" />
+    <p>Position ID</p>
+    <input type="text" name="position_id" />
+    <input type="submit" value="Search" />
+    {% if searchErr != "": %}
+      <p style="color:red;font-size:15px">{{ searchErr }}</p>
+    {% endif %}
+  </form>
+</body>
+
+
+</html>
