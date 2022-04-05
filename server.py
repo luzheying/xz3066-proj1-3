@@ -152,7 +152,7 @@ def index():
   context = dict(data = names)
 
 
-  #
+  
   # render_template looks in the templates/ folder for files.
   # for example, the below file reads template/index.html
   #
@@ -267,6 +267,8 @@ def findHost():
 def deleteEvent():
     id = request.args.get('event_id')
     host_id = request.args.get('host_id')
+    if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":id})).first() == None:
+      return render_template("host.html", insertErr="Event id invalid. Event not exists.")
     g.conn.execute(text("DELETE FROM Events WHERE id = :event_id"), {"event_id":id})
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
     # id = cursor.first()['id']
@@ -317,6 +319,10 @@ def invite():
     host_id = request.form.get('host_id')
     company_id = request.form['company_id']
     event_id = request.form['event_id']
+    if (g.conn.execute(text("SELECT * FROM Companys WHERE id = :company_id"), {"company_id":company_id})).first() == None:
+      return render_template("host.html", insertErr="Company id invalid. Company not exists.")
+    if (g.conn.execute(text("SELECT * FROM Events WHERE id = :event_id"), {"event_id":event_id})).first() == None:
+      return render_template("host.html", insertErr="Event id invalid. Event not exists.")
     g.conn.execute(text("INSERT INTO invites (event_id,host_id,company_id) VALUES (:event_id,:host_id,:company_id)"), {"company_id":company_id,"event_id":event_id, "host_id":host_id})
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
   # id = cursor.first()['id']
