@@ -213,7 +213,7 @@ def findCandidate():
     for eid in eventIDs:
       event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
       events.append(event)
-    return render_template('candidate_home.html', candidate=res, applications=applications, events=events, interviews=interviews)
+    return render_template('candidate_home.html', candidate=res, applications=applications, events=events, interviews=interviews,)
 
 @app.route('/candidate_home')
 @app.route('/candidate_home/<id>', methods=['GET'])
@@ -296,8 +296,17 @@ def event():
     budget = request.form['budget']
     # print(first_name)
     if date == "":
-      return render_template("host.html", insertErr="Register event failed. Date should not be null.")
-    event = g.conn.execute(text("INSERT INTO events (date, time, description, location, capacity) VALUES (:date, :time, :description, :location, :capacity) RETURNING id"), {"date":date,"time":time, "description":description,"location":location,"capacity":capacity})
+      return render_template("host.html", insertErr="Register event failed. Date and time should not be null.")
+    if capacity == "":
+      capacity = 0
+    if budget == "":
+      budget = None
+    if time == "":
+      time = None
+    try:
+      event = g.conn.execute(text("INSERT INTO events (date, time, description, location, capacity) VALUES (:date, :time, :description, :location, :capacity) RETURNING id"), {"date":date,"time":time, "description":description,"location":location,"capacity":capacity})
+    except exc.DataError as e:
+      return render_template("host.html", insertErr="Register event failed. Please make sure your input are in correct type.")
     event_id = event.first()[0]
     g.conn.execute(text("INSERT INTO Organizes (budget, event_id, host_id) VALUES (:budget, :event_id, :host_id)"), {"budget":budget,"event_id":event_id, "host_id":host_id})
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
