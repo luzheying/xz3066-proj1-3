@@ -207,12 +207,13 @@ def findCandidate():
       position = cursorPos.first()
       companyName = (g.conn.execute(text("SELECT name FROM Companys WHERE id = :id"), {"id":position.company_id})).first()['name']
       applications.append({"date":app.date, "time":app.time, "positionCompany":companyName, "positionName":position.name, "positionDescription":position.description, "positionLocation":position.location})
+    interviews = g.conn.execute(text("SELECT * FROM interviews INNER JOIN Applications ON interviews.application_id = Applications.id WHERE candidate_id = :candidate_id"), {"candidate_id":res.id})
     events = []
     eventIDs = g.conn.execute(text("SELECT event_id FROM Attends WHERE candidate_id = :candidate_id"), {"candidate_id":res.id})
     for eid in eventIDs:
       event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
       events.append(event)
-    return render_template('candidate_home.html', candidate=res, applications=applications, events=events)
+    return render_template('candidate_home.html', candidate=res, applications=applications, events=events, interviews=interviews)
 
 @app.route('/candidate_home')
 @app.route('/candidate_home/<id>', methods=['GET'])
@@ -241,11 +242,33 @@ def host():
     except exc.IntegrityError as e:
       return render_template("host.html", insertErr="Integrity Error. Please make sure you are following the database contraint.")
 
+
 @app.route('/findHost', methods=['GET'])
 def findHost():
     first_name = request.args.get('first_name')
     last_name = request.args.get('last_name')
     cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE first_name = :first_name AND last_name = :last_name"), {"first_name":first_name, "last_name":last_name})
+    # id = cursor.first()['id']
+    companys = g.conn.execute(text("SELECT id, name FROM Companys"))
+    res = []
+    for h in cursor:
+      events = []
+      eventIDs = g.conn.execute(text("SELECT event_id, budget FROM Organizes WHERE host_id = :host_id"), {"host_id":h.id})
+      for eid in eventIDs:
+        event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
+        events.append({"id": event.id, "date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
+      res.append({"id": h.id, "first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events,"companys":companys})
+    if len(res) == 0:
+      return render_template('host.html', searchErr="No result found.")
+    return render_template('host_home.html', hosts=res)
+
+
+@app.route('/deleteEvent', methods=['get'])
+def deleteEvent():
+    id = request.args.get('event_id')
+    host_id = request.args.get('host_id')
+    g.conn.execute(text("DELETE FROM Events WHERE id = :event_id"), {"event_id":id})
+    cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
     # id = cursor.first()['id']
     res = []
     for h in cursor:
@@ -253,18 +276,69 @@ def findHost():
       eventIDs = g.conn.execute(text("SELECT event_id, budget FROM Organizes WHERE host_id = :host_id"), {"host_id":h.id})
       for eid in eventIDs:
         event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
-        events.append({"date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
-      res.append({"first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
+        events.append({"id": event.id, "date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
+      res.append({"id": h.id, "first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
     if len(res) == 0:
       return render_template('host.html', searchErr="No result found.")
     return render_template('host_home.html', hosts=res)
+
+
+@app.route('/event', methods=['post'])
+def event():
+    host_id = request.form.get('host_id')
+    date = request.form['date']
+    time = request.form['time']
+    description = request.form['description']
+    location = request.form['location']
+    capacity = request.form['capacity']
+    budget = request.form['budget']
+    # print(first_name)
+    event = g.conn.execute(text("INSERT INTO events (date, time, description, location, capacity) VALUES (:date, :time, :description, :location, :capacity) RETURNING id"), {"date":date,"time":time, "description":description,"location":location,"capacity":capacity})
+    event_id = event.first()[0]
+    g.conn.execute(text("INSERT INTO Organizes (budget, event_id, host_id) VALUES (:budget, :event_id, :host_id)"), {"budget":budget,"event_id":event_id, "host_id":host_id})
+    cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
+  # id = cursor.first()['id']
+    res = []
+    for h in cursor:
+      events = []
+      eventIDs = g.conn.execute(text("SELECT event_id, budget FROM Organizes WHERE host_id = :host_id"), {"host_id":h.id})
+      for eid in eventIDs:
+        event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
+        events.append({"id": event.id, "date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
+      res.append({"id": h.id, "first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
+    if len(res) == 0:
+      return render_template('host.html', searchErr="No result found.")
+    return render_template('host_home.html', hosts=res)
+
+
+
+@app.route('/invite', methods=['post'])
+def invite():
+    host_id = request.form.get('host_id')
+    company_id = request.form['company_id']
+    event_id = request.form['event_id']
+    g.conn.execute(text("INSERT INTO invites (event_id,host_id,company_id) VALUES (:event_id,:host_id,:company_id)"), {"company_id":company_id,"event_id":event_id, "host_id":host_id})
+    cursor = g.conn.execute (text("SELECT * FROM Hosts WHERE id = :host_id"), {"host_id":host_id})
+  # id = cursor.first()['id']
+    res = []
+    for h in cursor:
+      events = []
+      eventIDs = g.conn.execute(text("SELECT event_id, budget FROM Organizes WHERE host_id = :host_id"), {"host_id":h.id})
+      for eid in eventIDs:
+        event = (g.conn.execute(text("SELECT * FROM Events WHERE id = :id"), {"id":eid.event_id})).first()
+        events.append({"id": event.id, "date":event.date, "time":event.time, "description":event.description, "location":event.location, "budget":eid.budget})
+      res.append({"id": h.id, "first_name":h.first_name, "last_name":h.last_name, "organization":h.organization, "events":events})
+    if len(res) == 0:
+      return render_template('host.html', searchErr="No result found.")
+    return render_template('host_home.html', hosts=res)
+
+
 
 @app.route('/host_home')
 @app.route('/host_home/<id>', methods=['GET'])
 def host_home():
   print(request.args)
   return render_template('host_home.html')
-
 
 
 @app.route('/company', methods=['POST','GET'])
@@ -293,7 +367,9 @@ def findCompany():
     for c in cursor:
       recruiters = g.conn.execute(text("SELECT * FROM Recruiters WHERE company_id = :company_id"), {"company_id": c.id})
       positions = g.conn.execute(text("SELECT * FROM Positions WHERE company_id = :company_id"), {"company_id": c.id})
-      res.append({"name":c.name, "description":c.description, "location":c.location, "recruiters":recruiters, "positions":positions})
+      events = g.conn.execute(text("SELECT * FROM events INNER JOIN invites ON events.id = invites.event_id WHERE invites.company_id = :company_id"), {"company_id": c.id})
+
+      res.append({"name":c.name, "description":c.description, "location":c.location, "recruiters":recruiters, "positions":positions, "events":events})
     if len(res) == 0:
       return render_template('company.html', searchErr="No result found.")
     return render_template('company_home.html', companys=res)
@@ -324,6 +400,8 @@ def recruiter():
     g.conn.execute (text("INSERT INTO Recruiters (first_name, last_name, company_id, phone, email, title) VALUES (:first_name, :last_name, :company_id, :phone, :email, :title)"), {"first_name":first_name, "last_name":last_name, "company_id":company_id, "phone":phone, "email":email, "title":title})
     return render_template("recruiter.html")
 
+
+    
 @app.route('/findRecruiter', methods=['GET'])
 def findRecruiter():
     first_name = request.args.get('first_name')
@@ -346,16 +424,19 @@ def findRecruiter():
         else:
           resume = "Resume unsubmitted or unknown."
         applications.append({"date":app.date, "time":app.time, "resume":resume, "candidate":candidate, "position":position})
-      res.append({"first_name":r.first_name, "last_name":r.last_name, "title":r.title, "phone":r.phone, "email":r.email, "applications":applications, "company":company})
+      interviews = g.conn.execute(text("SELECT * FROM interviews INNER JOIN Applications ON interviews.application_id = Applications.id WHERE recruiter_id = :recruiter_id"), {"recruiter_id":r.id})
+      res.append({"first_name":r.first_name, "last_name":r.last_name, "title":r.title, "phone":r.phone, "email":r.email, "applications":applications, "company":company, "interviews":interviews})
     if len(res) == 0:
       return render_template('recruiter.html', searchErr="No result found.")
     return render_template('recruiter_home.html', recruiters=res)
+
 
 @app.route('/recruiter_home')
 @app.route('/recruiter_home/<id>', methods=['GET'])
 def recruiter_home():
   print(request.args)
   return render_template('recruiter_home.html')
+
 
 @app.route('/login')
 def login():

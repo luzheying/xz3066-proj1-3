@@ -22,5 +22,11 @@
             <li>{{ r.first_name }} {{ r.last_name }}, {{ r.title }}. Contact info: phone number {{ r.phone }}, email {{ r.email }}</li>
           {% endfor %}
         </ul>
+        <h3>Events:</h3>
+        <ul>
+          {% for r in company.events: %}
+            <li> date: {{ r.date }}, time:{{ r.time }}, description: {{ r.description }}, location: {{ r.location }}, capacity: {{ r.capacity }}</li>
+          {% endfor %}
+        </ul>
     {% endfor %}
 </html>

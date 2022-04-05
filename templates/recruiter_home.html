@@ -19,5 +19,11 @@
             <li>Application {{ a.id }}: submitted on {{ a.date }} {{ a.time }} by candidate {{ a.candidate.id }} {{ a.candidate.first_name }} {{ a.candidate.last_name }}, applied for position {{ a.position.id }}.</li>
           {% endfor %}
         </ul>
+        <h3>Scheduled Interview:</h3>
+        <ul>
+          {% for a in r.interviews: %}
+            <li>interviews {{ a.id }}: scheduled on {{ a.date }} {{ a.time }} </li>
+          {% endfor %}
+        </ul>
     {% endfor %}
 </html>

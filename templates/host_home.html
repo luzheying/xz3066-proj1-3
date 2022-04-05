@@ -6,15 +6,61 @@
     }
   </style>
     {% for h in hosts: %}
-        <h2>Host {{ h.id }} Info</h2>
+        <h2>Host Info</h2>
         <p>First name: {{ h.first_name }}</p>
         <p>Last name: {{ h.last_name }}</p>
         <p>Organization: {{ h.organization }}</p>
         <h3>Organized Events:</h3>
         <ul>
           {% for evt in h.events: %}
-            <li>{{ evt.description }}   |   Hold on {{ evt.time }}, {{ evt.date }}. Located in {{ evt.location }}. Has budget {{ evt.budget }}.</li>
+            <li>Event id : {{ evt.id }} | {{ evt.description }}   |   Hold on {{ evt.time }}, {{ evt.date }}. Located in {{ evt.location }}. Has budget {{ evt.budget }}.</li>
           {% endfor %}
         </ul>
+        <h3>Delete Events</h3>
+        <form action="/deleteEvent?host_id={{h.id}}" method="get">
+          <input type="hidden" name="host_id" value= "{{ h.id }}" />
+          <p>type in event id to delete an event</p><input type="text" name="event_id" />
+          <input type="submit" value = "delete"/>
+        </form>
+    
+        <h3>Create Events</h3>
+        <form action="/event" method="post">
+          <input type="hidden" name="host_id" value= "{{ h.id }}" />
+          <p>Date</p>
+          <input type="text" name="date" />
+          <p>Time</p>
+          <input type="text" name="time" />
+          <p>Description</p>
+          <input type="text" name="description" />
+          <p>Location</p>
+          <input type="text" name="location" />
+          <p>Capacity</p>
+          <input type="text" name="capacity" />
+          <p>Budget</p>
+          <input type="text" name="budget" />
+          <input type="submit" />
+          {% if insertErr != "": %}
+            <p style="color:red;font-size:15px">{{ insertErr }}</p>
+          {% endif %}
+        </form> 
+
+        {% for company in h.companys: %}
+          <li>{{ company.id }}: {{ company.name }}</li>
+        {% endfor %}
+        <h3>Invite Company</h3>
+        <form action="/invite" method="post">
+          <input type="hidden" name="host_id" value= "{{ h.id }}" />
+          <p>company id</p>
+          <input type="text" name="company_id" />
+          <p>event id</p>
+          <input type="text" name="event_id" />
+          <input type="submit" />
+          {% if insertErr != "": %}
+            <p style="color:red;font-size:15px">{{ insertErr }}</p>
+          {% endif %}
+        </form> 
+
     {% endfor %}
+
+
 </html>

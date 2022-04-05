@@ -22,4 +22,10 @@
         <li>{{ evt.description }}   |   Hold on {{ evt.time }}, {{ evt.date }}. Located in {{ evt.location }}.</li>
       {% endfor %}
     </ul>
+    <h3>Scheduled Interview:</h3>
+        <ul>
+          {% for a in interviews: %}
+            <li>interviews {{ a.id }}: scheduled on {{ a.date }} {{ a.time }} </li>
+          {% endfor %}
+        </ul>
 </html>
