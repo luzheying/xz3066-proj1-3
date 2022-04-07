@@ -1,7 +1,7 @@
 # project1.3 (xz3066 zl3091)
 * PostgreSQL account: xz3066
 
-* App URL: http://34.74.114.235:8111/
+* App URL: http://34.139.97.235:8111/
 
 * Back to Proposal:
 Our web app realizes event management mentioned in proposal in following ways. Hosts are able to create events, delete events, and invite companies for events. Candidates can then see their attended events. And companies are also able to see their being-invited events.
